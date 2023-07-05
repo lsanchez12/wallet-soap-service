@@ -1,10 +1,11 @@
 {
     "autoload":{
         "psr-0":{
-            "Catalogs":"libs"
+            "Services":"libs"
         }
     },
     "require": {
-        "php2wsdl/php2wsdl": "^0.7.0"
+        "php2wsdl/php2wsdl": "^0.7.0",
+        "vlucas/phpdotenv": "^5.5"
     }
 }

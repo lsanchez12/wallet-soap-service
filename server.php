@@ -3,13 +3,16 @@
     require_once __DIR__ . "/vendor/autoload.php";
     include 'Services/BookService.php';
 
-    $class = "Bookcatalog\BookService";
-    $wsdl = "book.wsdl";
+    $dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
+    $dotenv->safeLoad();
+
+    $class = "Services\BookService";
+    $wsdl = "wsdl/book.wsdl";
 
 
     // initialize SOAP Server
-    $server=new SoapServer($wsdl,[
-        'uri'=>"http://localhost:8091/server.php"
+    $server = new SoapServer($wsdl,[
+        'uri'=> $_ENV['URL_SERVER']
     ]);
 
     $server->setClass($class);
