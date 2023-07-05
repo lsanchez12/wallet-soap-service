@@ -1,5 +1,5 @@
 <?php
-namespace Catalogs;
+namespace Models;
 
 class Book
 {
