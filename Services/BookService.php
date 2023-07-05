@@ -1,5 +1,5 @@
 <?php
-namespace Bookcatalog;
+namespace Services;
 
 class BookService
 {
@@ -29,7 +29,7 @@ class BookService
 
  /**
   * @soap
-  * @param Catalogs\Book $book
+  * @param Models\Book $book
   * @return string  
   */
  public function bookDetails($book){  
