@@ -1,0 +1,10 @@
+{
+    "autoload":{
+        "psr-0":{
+            "Catalogs":"libs"
+        }
+    },
+    "require": {
+        "php2wsdl/php2wsdl": "^0.7.0"
+    }
+}
