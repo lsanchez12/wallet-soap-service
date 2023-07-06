@@ -35,6 +35,23 @@ class WalletService {
         ];
     }
 
+
+    /**
+    * @soap
+    * @param string $token
+    * @return boolean  
+    */
+    public function validateToken($token){
+        $database = new Database\Database();
+        $database->connect();
+
+        $result = $database->query("SELECT token FROM users WHERE api_token = '{$token}' LIMIT 1");
+        while ($row = $result->fetch_assoc()) {
+            return true;
+        }
+        return false;
+    }
+
     /**
      * @soap
     * @param integer $id
