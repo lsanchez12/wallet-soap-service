@@ -37,6 +37,22 @@
     
             return $result;
         }
+
+        public function insert($table, $array) {
+            $insert = [];
+            $values = [];
+            foreach ($array as $key => $value) {
+                $insert[] = $key;
+                $values[] = "'".$value."'";
+            }
+            $sql = "INSERT INTO {$table} (".implode(",",$insert).") VALUES(".implode(",",$values).")";
+
+            if ($this->conn->query($sql) === TRUE) {
+                return $this->conn->insert_id;
+            } else {
+                return false;
+            }
+        }
     
     }
 ?>

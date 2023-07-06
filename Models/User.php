@@ -27,6 +27,10 @@ class User
      * @var string
      */
     public $email;
+    /**
+     * @var string
+     */
+    public $api_token;
 
     /**
      * @var string

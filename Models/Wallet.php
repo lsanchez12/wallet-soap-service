@@ -19,11 +19,6 @@ class Wallet
     public $wallet_uuid;
 
     /**
-     * @var string
-     */
-    public $last_name;
-
-    /**
      * @var float
      */
     public $balance;

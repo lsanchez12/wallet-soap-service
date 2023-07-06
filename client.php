@@ -1,10 +1,6 @@
 <?php
-// Request Model
-class Book
-{
-    public $name;
-    public $year;
-}
+
+include 'Models/Book.php';
 
 class Client{
 
@@ -34,7 +30,7 @@ $client = new Client;
 $bookId = array("5409");
 
 // create instance and set a book name
-$book =new Book();
+$book =new Models\Book();
 $book->name='Rust Development';
 
 try{
