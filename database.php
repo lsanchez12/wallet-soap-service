@@ -45,7 +45,7 @@
                 $insert[] = $key;
                 $values[] = "'".$value."'";
             }
-            $sql = "INSERT INTO {$table} (".implode(",",$insert).") VALUES(".implode(",",$values).")";
+            $sql = "INSERT INTO {$table} (".implode(",",$insert).",created_at, updated_at) VALUES(".implode(",",$values).", NOW(), NOW())";
 
             if ($this->conn->query($sql) === TRUE) {
                 return $this->conn->insert_id;

@@ -85,9 +85,13 @@ class WalletService {
         $user["api_token"] = md5(uniqid().rand(1000000, 9999999));
         $user["password"] = password_hash($user["password"],PASSWORD_DEFAULT);
         if($result = $database->insert("users", $user)){
+            $database->insert("wallets", [
+                "wallet_uuid" => uniqid('wallet_'),
+                "id_user" => $result,
+            ]);
             return [
                 "success" => true,
-                "data" => $result
+                "data" => ['id' => $result]
             ];
         }
         return [
@@ -107,7 +111,7 @@ class WalletService {
         $database = new Database\Database();
         $database->connect();
 
-        $result = $database->query("SELECT wallet_uuid FROM wallets WHERE id_user = {$id} LIMIT 1");
+        $result = $database->query("SELECT wallet_uuid FROM wallets WHERE id_user = {$userId} LIMIT 1");
         while ($row = $result->fetch_assoc()) {
             return [
                 "success" => true,
@@ -183,7 +187,7 @@ class WalletService {
         ])){
             return [
                 "success" => true,
-                "data" => $transaction_uuid 
+                "data" => ["transaction_uuid" => $transaction_uuid]
             ];
         }
 
@@ -214,6 +218,31 @@ class WalletService {
             "message" => "Transaction not found"
         ];
     }
+
+    /**
+    * @soap
+    * @param string $transaction_uuid
+    * @return object  
+    */
+    public function getTransactions($idUser){
+        $database = new Database\Database();
+        $database->connect();
+
+        $result = $database->query("SELECT transactions.id, transactions.transaction_uuid,transactions.amount,transactions.created_at as created_transaction, payments.status,payments.created_at as created_payment FROM transactions LEFT JOIN payments ON payments.id_transaction = transactions.id  WHERE transactions.id_user = {$idUser}");
+        
+        $data = $result->fetch_all(MYSQLI_ASSOC);
+        $result->free_result();
+
+        return [
+            "success" => true,
+            "data" => $data
+        ];
+        
+        return [
+            "success" => false,
+            "message" => "Transaction not found"
+        ];
+    }
     //PAYMENT
     /**
     * @soap
@@ -224,7 +253,7 @@ class WalletService {
     public function chargePayment($transaction_uuid, $token){
         $database = new Database\Database();
         $database->connect();
-        $result = $database->query("SELECT id,amount,user_id FROM transactions WHERE transaction_uuid = '{$transaction_uuid}' and token='{$token}' LIMIT 1");
+        $result = $database->query("SELECT id,amount,id_user FROM transactions WHERE transaction_uuid = '{$transaction_uuid}' and token='{$token}' LIMIT 1");
         $transaction = null;
         while ($row = $result->fetch_assoc()) {
             $transaction = $row;
@@ -232,25 +261,25 @@ class WalletService {
         }
         if($transaction){
             $wallet = null;
-            $result = $database->query("SELECT id,balance FROM wallets WHERE id_user = '{$transaction["user_id"]}' LIMIT 1");
+            $result = $database->query("SELECT id,balance FROM wallets WHERE id_user = '{$transaction["id_user"]}' LIMIT 1");
             while ($row = $result->fetch_assoc()) {
                 $wallet = $row;
                 break;
             }
             if($wallet){
                 if($wallet["balance"] >= $transaction["amount"]){
-                    if($payment = $database->insert("payment", [
+                    if($payment = $database->insert("payments", [
                         "id_transaction" => $transaction["id"],
                         "status" => "PAID",
                     ])){
-                        $database->query("UPDATE wallets SET balance=balance-{$transaction["amount"]} WHERE id = '{$wallet["id"]}'");
+                        $database->query("UPDATE wallets SET balance=balance-{$transaction["amount"]}, updated_at = NOW() WHERE id = '{$wallet["id"]}'");
                         return [
                             "success" => true,
                             "data" => $payment 
                         ];
                     }
                     else{
-                        if($payment = $database->insert("payment", [
+                        if($payment = $database->insert("payments", [
                             "id_transaction" => $transaction["id"],
                             "status" => "ERROR TRANSACTION",
                         ])){
@@ -261,16 +290,11 @@ class WalletService {
                         }
                     }
                 }else{
-                    if($payment = $database->insert("payment", [
-                        "id_transaction" => $transaction["id"],
-                        "status" => "INSUFFICIENT_FUNDS",
-                    ])){
                         return [
                             "success" => false,
                             "message" => "insufficient funds",
                             "data" => $payment 
                         ];
-                    }
                 }
             }
         }
