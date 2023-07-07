@@ -29,7 +29,7 @@ class WalletService {
                 $user = $row;
                 break;
             }
-            $this->database->close();
+            
             if(password_verify($password, $user["password"])){
                 unset($user["password"]);
                 return [
@@ -42,7 +42,7 @@ class WalletService {
                 "message" => "Email or password invalid"
             ];
         } catch (\Throwable $e) {
-            $this->database->close();
+            
             return [
                 "success" => false,
                 "message" => $e->getMessage()
@@ -61,7 +61,7 @@ class WalletService {
             $this->database->connect();
 
             $result = $this->database->query("SELECT id,document,first_name,last_name,phone_number,email FROM users  WHERE id = {$id} LIMIT 1");
-            $this->database->close();
+            
             while ($row = $result->fetch_assoc()) {
                 return [
                     "success" => true,
@@ -73,7 +73,7 @@ class WalletService {
                 "message" => "User not found"
             ];
         } catch (\Throwable $e) {
-            $this->database->close();
+            
             return [
                 "success" => false,
                 "message" => $e->getMessage()
@@ -92,7 +92,7 @@ class WalletService {
             $this->database->connect();
             $user["api_token"] = md5(uniqid().rand(1000000, 9999999));
             $user["password"] = password_hash($user["password"],PASSWORD_DEFAULT);
-            $this->database->close();
+            
             if($result = $this->database->insert("users", $user)){
                 $this->database->insert("wallets", [
                     "wallet_uuid" => uniqid('wallet_'),
@@ -104,7 +104,7 @@ class WalletService {
                 ];
             }
         } catch (\Throwable $e) {
-            $this->database->close();
+            
             return [
                 "success" => false,
                 "message" => $e->getMessage()
@@ -125,7 +125,7 @@ class WalletService {
             $this->database->connect();
     
             $result = $this->database->query("SELECT wallet_uuid FROM wallets WHERE id_user = {$userId} LIMIT 1");
-            $this->database->close();
+            
             while ($row = $result->fetch_assoc()) {
                 return [
                     "success" => true,
@@ -137,7 +137,7 @@ class WalletService {
                 "message" => "Wallet not found"
             ];
         } catch (\Throwable $e) {
-            $this->database->close();
+            
             return [
                 "success" => false,
                 "message" => $e->getMessage()
@@ -156,7 +156,7 @@ class WalletService {
             $this->database->connect();
     
             $result = $this->database->query("SELECT balance FROM wallets WHERE wallet_uuid = '{$uuid}' LIMIT 1");
-            $this->database->close();
+            
             while ($row = $result->fetch_assoc()) {
                 return [
                     "success" => true,
@@ -168,7 +168,7 @@ class WalletService {
                 "message" => "Wallet not found"
             ];
         } catch (\Throwable $e) {
-            $this->database->close();
+            
             return [
                 "success" => false,
                 "message" => $e->getMessage()
@@ -188,7 +188,7 @@ class WalletService {
             $this->database->connect();
     
             if ($this->database->query("UPDATE wallets SET balance=balance+{$amount} WHERE wallet_uuid = '{$uuid}'") === TRUE) {
-                $this->database->close();
+                
                 return [
                     "success" => true,
                     "message" => "Charge success"
@@ -199,7 +199,7 @@ class WalletService {
                 "message" => "Charge error"
             ];
         } catch (\Throwable $e) {
-            $this->database->close();
+            
             return [
                 "success" => false,
                 "message" => $e->getMessage()
@@ -225,7 +225,7 @@ class WalletService {
                 "amount" => $amount,
                 "token" => mt_rand(100000,999999),
             ])){
-                $this->database->close();
+                
                 return [
                     "success" => true,
                     "data" => ["transaction_uuid" => $transaction_uuid]
@@ -237,7 +237,7 @@ class WalletService {
                 "message" => "Error in create transaction",
             ];
         } catch (\Throwable $e) {
-            $this->database->close();
+            
             return [
                 "success" => false,
                 "message" => $e->getMessage()
@@ -257,7 +257,7 @@ class WalletService {
 
             $result = $this->database->query("SELECT * FROM transactions LEFT JOIN payments ON payments.id_transaction = transactions.id  WHERE transactions.transaction_uuid = '{$transaction_uuid}' LIMIT 1");
             while ($row = $result->fetch_assoc()) {
-                $this->database->close();
+                
                 return [
                     "success" => true,
                     "data" => $row
@@ -268,7 +268,7 @@ class WalletService {
                 "message" => "Transaction not found"
             ];
         } catch (\Throwable $e) {
-            $this->database->close();
+            
             return [
                 "success" => false,
                 "message" => $e->getMessage()
@@ -293,7 +293,7 @@ class WalletService {
             $data = $result->fetch_all(MYSQLI_ASSOC);
             $result->free_result();
 
-            $this->database->close();
+            
     
             return [
                 "success" => true,
@@ -305,7 +305,7 @@ class WalletService {
                 "message" => "Transaction not found"
             ];
         } catch (\Throwable $e) {
-            $this->database->close();
+            
             return [
                 "success" => false,
                 "message" => $e->getMessage()
@@ -380,7 +380,7 @@ class WalletService {
                 "message" => "Error in create payment",
             ];
         } catch (\Throwable $e) {
-            $this->database->close();
+            
             return [
                 "success" => false,
                 "message" => $e->getMessage()
