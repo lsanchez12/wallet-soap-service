@@ -57,6 +57,23 @@
                 return false;
             }
         }
+
+        public function multiQuery($fileSQL){
+            if ($this->conn->multi_query($fileSQL)) {
+                do {
+                    if ($result = $this->conn->store_result()) {
+                        while ($row = $result->fetch_assoc()) {
+                            print_r($row);
+                            echo "<br/>";
+                        }
+                        $result->free();
+                    }
+                    if ($this->conn->more_results()) {
+                        printf("-----------------\n");
+                    }
+                } while ($this->conn->next_result());
+            }
+        }
     
     }
 ?>
