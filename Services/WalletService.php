@@ -4,6 +4,12 @@ include 'database.php';
 use Database;
 
 class WalletService {
+
+    private $database;
+
+    public function __construct() {
+        $this->database = new Database\Database();
+    }
     //USER
 
     /**
@@ -13,43 +19,35 @@ class WalletService {
     * @return object  
     */
     public function login($email,$password){
-        $database = new Database\Database();
-        $database->connect();
+        try{
+            $this->database = new Database\Database();
+            $this->database->connect();
 
-        $result = $database->query("SELECT id,document,first_name,last_name,phone_number,email,api_token,password FROM users  WHERE email = '{$email}' LIMIT 1");
-        $user = [];
-        while ($row = $result->fetch_assoc()) {
-            $user = $row;
-            break;
-        }
-        if(password_verify($password, $user["password"])){
-            unset($user["password"]);
+            $result = $this->database->query("SELECT id,document,first_name,last_name,phone_number,email,api_token,password FROM users  WHERE email = '{$email}' LIMIT 1");
+            $user = [];
+            while ($row = $result->fetch_assoc()) {
+                $user = $row;
+                break;
+            }
+            $this->database->close();
+            if(password_verify($password, $user["password"])){
+                unset($user["password"]);
+                return [
+                    "success" => true,
+                    "data" => $user
+                ];
+            }
             return [
-                "success" => true,
-                "data" => $user
+                "success" => false,
+                "message" => "Email or password invalid"
+            ];
+        } catch (\Throwable $e) {
+            $this->database->close();
+            return [
+                "success" => false,
+                "message" => $e->getMessage()
             ];
         }
-        return [
-            "success" => false,
-            "message" => "Email or password invalid"
-        ];
-    }
-
-
-    /**
-    * @soap
-    * @param string $token
-    * @return boolean  
-    */
-    public function validateToken($token){
-        $database = new Database\Database();
-        $database->connect();
-
-        $result = $database->query("SELECT token FROM users WHERE api_token = '{$token}' LIMIT 1");
-        while ($row = $result->fetch_assoc()) {
-            return true;
-        }
-        return false;
     }
 
     /**
@@ -58,20 +56,29 @@ class WalletService {
     * @return object  
     */
     public function getUser($id){
-        $database = new Database\Database();
-        $database->connect();
+        try{
+            $this->database = new Database\Database();
+            $this->database->connect();
 
-        $result = $database->query("SELECT id,document,first_name,last_name,phone_number,email FROM users  WHERE id = {$id} LIMIT 1");
-        while ($row = $result->fetch_assoc()) {
+            $result = $this->database->query("SELECT id,document,first_name,last_name,phone_number,email FROM users  WHERE id = {$id} LIMIT 1");
+            $this->database->close();
+            while ($row = $result->fetch_assoc()) {
+                return [
+                    "success" => true,
+                    "data" => $row
+                ];
+            }
             return [
-                "success" => true,
-                "data" => $row
+                "success" => false,
+                "message" => "User not found"
+            ];
+        } catch (\Throwable $e) {
+            $this->database->close();
+            return [
+                "success" => false,
+                "message" => $e->getMessage()
             ];
         }
-        return [
-            "success" => false,
-            "message" => "User not found"
-        ];
     }
 
     /**
@@ -80,24 +87,29 @@ class WalletService {
     * @return object  
     */
     public function createUser($user){  
-        $database = new Database\Database();
-        $database->connect();
-        $user["api_token"] = md5(uniqid().rand(1000000, 9999999));
-        $user["password"] = password_hash($user["password"],PASSWORD_DEFAULT);
-        if($result = $database->insert("users", $user)){
-            $database->insert("wallets", [
-                "wallet_uuid" => uniqid('wallet_'),
-                "id_user" => $result,
-            ]);
+        try {
+            $this->database = new Database\Database();
+            $this->database->connect();
+            $user["api_token"] = md5(uniqid().rand(1000000, 9999999));
+            $user["password"] = password_hash($user["password"],PASSWORD_DEFAULT);
+            $this->database->close();
+            if($result = $this->database->insert("users", $user)){
+                $this->database->insert("wallets", [
+                    "wallet_uuid" => uniqid('wallet_'),
+                    "id_user" => $result,
+                ]);
+                return [
+                    "success" => true,
+                    "data" => ['id' => $result]
+                ];
+            }
+        } catch (\Throwable $e) {
+            $this->database->close();
             return [
-                "success" => true,
-                "data" => ['id' => $result]
+                "success" => false,
+                "message" => $e->getMessage()
             ];
         }
-        return [
-            "success" => false,
-            "message" => "Error in create new user"
-        ];
     }
 
     //WALLET
@@ -108,20 +120,29 @@ class WalletService {
     * @return object  
     */
     public function getWallet($userId){
-        $database = new Database\Database();
-        $database->connect();
-
-        $result = $database->query("SELECT wallet_uuid FROM wallets WHERE id_user = {$userId} LIMIT 1");
-        while ($row = $result->fetch_assoc()) {
+        try {
+            $this->database = new Database\Database();
+            $this->database->connect();
+    
+            $result = $this->database->query("SELECT wallet_uuid FROM wallets WHERE id_user = {$userId} LIMIT 1");
+            $this->database->close();
+            while ($row = $result->fetch_assoc()) {
+                return [
+                    "success" => true,
+                    "data" => $row
+                ];
+            }
             return [
-                "success" => true,
-                "data" => $row
+                "success" => false,
+                "message" => "Wallet not found"
+            ];
+        } catch (\Throwable $e) {
+            $this->database->close();
+            return [
+                "success" => false,
+                "message" => $e->getMessage()
             ];
         }
-        return [
-            "success" => false,
-            "message" => "Wallet not found"
-        ];
     }
 
     /**
@@ -130,20 +151,29 @@ class WalletService {
     * @return object  
     */
     public function getBalance($uuid){
-        $database = new Database\Database();
-        $database->connect();
-
-        $result = $database->query("SELECT balance FROM wallets WHERE wallet_uuid = '{$uuid}' LIMIT 1");
-        while ($row = $result->fetch_assoc()) {
+        try {
+            $this->database = new Database\Database();
+            $this->database->connect();
+    
+            $result = $this->database->query("SELECT balance FROM wallets WHERE wallet_uuid = '{$uuid}' LIMIT 1");
+            $this->database->close();
+            while ($row = $result->fetch_assoc()) {
+                return [
+                    "success" => true,
+                    "data" => $row
+                ];
+            }
             return [
-                "success" => true,
-                "data" => $row
+                "success" => false,
+                "message" => "Wallet not found"
+            ];
+        } catch (\Throwable $e) {
+            $this->database->close();
+            return [
+                "success" => false,
+                "message" => $e->getMessage()
             ];
         }
-        return [
-            "success" => false,
-            "message" => "Wallet not found"
-        ];
     }
 
     /**
@@ -153,19 +183,28 @@ class WalletService {
     * @return object  
     */
     public function chargeWallet($uuid,$amount){
-        $database = new Database\Database();
-        $database->connect();
-
-        if ($database->query("UPDATE wallets SET balance=balance+{$amount} WHERE wallet_uuid = '{$uuid}'") === TRUE) {
+        try {
+            $this->database = new Database\Database();
+            $this->database->connect();
+    
+            if ($this->database->query("UPDATE wallets SET balance=balance+{$amount} WHERE wallet_uuid = '{$uuid}'") === TRUE) {
+                $this->database->close();
+                return [
+                    "success" => true,
+                    "message" => "Charge success"
+                ];
+            } 
             return [
-                "success" => true,
-                "message" => "Charge success"
+                "success" => false,
+                "message" => "Charge error"
             ];
-        } 
-        return [
-            "success" => false,
-            "message" => "Charge error"
-        ];
+        } catch (\Throwable $e) {
+            $this->database->close();
+            return [
+                "success" => false,
+                "message" => $e->getMessage()
+            ];
+        }
     }
 
     //TRANSACTION
@@ -176,25 +215,34 @@ class WalletService {
     * @return object  
     */
     public function createTransaction($amount, $idUser){
-        $database = new Database\Database();
-        $database->connect();
-        $transaction_uuid = uniqid('transaction_');
-        if($transaction_id = $database->insert("transactions", [
-            "id_user" => $idUser,
-            "transaction_uuid" => $transaction_uuid,
-            "amount" => $amount,
-            "token" => mt_rand(100000,999999),
-        ])){
+        try {
+            $this->database = new Database\Database();
+            $this->database->connect();
+            $transaction_uuid = uniqid('transaction_');
+            if($transaction_id = $this->database->insert("transactions", [
+                "id_user" => $idUser,
+                "transaction_uuid" => $transaction_uuid,
+                "amount" => $amount,
+                "token" => mt_rand(100000,999999),
+            ])){
+                $this->database->close();
+                return [
+                    "success" => true,
+                    "data" => ["transaction_uuid" => $transaction_uuid]
+                ];
+            }
+    
             return [
-                "success" => true,
-                "data" => ["transaction_uuid" => $transaction_uuid]
+                "success" => false,
+                "message" => "Error in create transaction",
+            ];
+        } catch (\Throwable $e) {
+            $this->database->close();
+            return [
+                "success" => false,
+                "message" => $e->getMessage()
             ];
         }
-
-        return [
-            "success" => false,
-            "message" => "Error in create transaction",
-        ];
     }
 
     /**
@@ -203,20 +251,30 @@ class WalletService {
     * @return object  
     */
     public function getTransaction($transaction_uuid){
-        $database = new Database\Database();
-        $database->connect();
+        try {
+            $this->database = new Database\Database();
+            $this->database->connect();
 
-        $result = $database->query("SELECT * FROM transactions LEFT JOIN payments ON payments.id_transaction = transactions.id  WHERE transactions.transaction_uuid = '{$transaction_uuid}' LIMIT 1");
-        while ($row = $result->fetch_assoc()) {
+            $result = $this->database->query("SELECT * FROM transactions LEFT JOIN payments ON payments.id_transaction = transactions.id  WHERE transactions.transaction_uuid = '{$transaction_uuid}' LIMIT 1");
+            while ($row = $result->fetch_assoc()) {
+                $this->database->close();
+                return [
+                    "success" => true,
+                    "data" => $row
+                ];
+            }
             return [
-                "success" => true,
-                "data" => $row
+                "success" => false,
+                "message" => "Transaction not found"
+            ];
+        } catch (\Throwable $e) {
+            $this->database->close();
+            return [
+                "success" => false,
+                "message" => $e->getMessage()
             ];
         }
-        return [
-            "success" => false,
-            "message" => "Transaction not found"
-        ];
+        
     }
 
     /**
@@ -225,23 +283,34 @@ class WalletService {
     * @return object  
     */
     public function getTransactions($idUser){
-        $database = new Database\Database();
-        $database->connect();
+        try {
+            //code...
+            $this->database = new Database\Database();
+            $this->database->connect();
+    
+            $result = $this->database->query("SELECT transactions.id, transactions.transaction_uuid,transactions.amount,transactions.created_at as created_transaction, payments.status,payments.created_at as created_payment FROM transactions LEFT JOIN payments ON payments.id_transaction = transactions.id  WHERE transactions.id_user = {$idUser}");
+            
+            $data = $result->fetch_all(MYSQLI_ASSOC);
+            $result->free_result();
 
-        $result = $database->query("SELECT transactions.id, transactions.transaction_uuid,transactions.amount,transactions.created_at as created_transaction, payments.status,payments.created_at as created_payment FROM transactions LEFT JOIN payments ON payments.id_transaction = transactions.id  WHERE transactions.id_user = {$idUser}");
-        
-        $data = $result->fetch_all(MYSQLI_ASSOC);
-        $result->free_result();
-
-        return [
-            "success" => true,
-            "data" => $data
-        ];
-        
-        return [
-            "success" => false,
-            "message" => "Transaction not found"
-        ];
+            $this->database->close();
+    
+            return [
+                "success" => true,
+                "data" => $data
+            ];
+            
+            return [
+                "success" => false,
+                "message" => "Transaction not found"
+            ];
+        } catch (\Throwable $e) {
+            $this->database->close();
+            return [
+                "success" => false,
+                "message" => $e->getMessage()
+            ];
+        }
     }
     //PAYMENT
     /**
@@ -251,63 +320,71 @@ class WalletService {
     * @return object  
     */
     public function chargePayment($transaction_uuid, $token){
-        $database = new Database\Database();
-        $database->connect();
-        $result = $database->query("SELECT id,amount,id_user FROM transactions WHERE transaction_uuid = '{$transaction_uuid}' and token='{$token}' LIMIT 1");
-        $transaction = null;
-        while ($row = $result->fetch_assoc()) {
-            $transaction = $row;
-            break;
-        }
-        if($transaction){
-            $wallet = null;
-            $result = $database->query("SELECT id,balance FROM wallets WHERE id_user = '{$transaction["id_user"]}' LIMIT 1");
+        try {
+            $this->database = new Database\Database();
+            $this->database->connect();
+            $result = $this->database->query("SELECT id,amount,id_user FROM transactions WHERE transaction_uuid = '{$transaction_uuid}' and token='{$token}' LIMIT 1");
+            $transaction = null;
             while ($row = $result->fetch_assoc()) {
-                $wallet = $row;
+                $transaction = $row;
                 break;
             }
-            if($wallet){
-                if($wallet["balance"] >= $transaction["amount"]){
-                    if($payment = $database->insert("payments", [
-                        "id_transaction" => $transaction["id"],
-                        "status" => "PAID",
-                    ])){
-                        $database->query("UPDATE wallets SET balance=balance-{$transaction["amount"]}, updated_at = NOW() WHERE id = '{$wallet["id"]}'");
-                        return [
-                            "success" => true,
-                            "data" => $payment 
-                        ];
-                    }
-                    else{
-                        if($payment = $database->insert("payments", [
+            if($transaction){
+                $wallet = null;
+                $result = $this->database->query("SELECT id,balance FROM wallets WHERE id_user = '{$transaction["id_user"]}' LIMIT 1");
+                while ($row = $result->fetch_assoc()) {
+                    $wallet = $row;
+                    break;
+                }
+                if($wallet){
+                    if($wallet["balance"] >= $transaction["amount"]){
+                        if($payment = $this->database->insert("payments", [
                             "id_transaction" => $transaction["id"],
-                            "status" => "ERROR TRANSACTION",
+                            "status" => "PAID",
                         ])){
+                            $this->database->query("UPDATE wallets SET balance=balance-{$transaction["amount"]}, updated_at = NOW() WHERE id = '{$wallet["id"]}'");
                             return [
-                                "success" => false,
+                                "success" => true,
                                 "data" => $payment 
                             ];
                         }
+                        else{
+                            if($payment = $this->database->insert("payments", [
+                                "id_transaction" => $transaction["id"],
+                                "status" => "ERROR TRANSACTION",
+                            ])){
+                                return [
+                                    "success" => false,
+                                    "data" => $payment 
+                                ];
+                            }
+                        }
+                    }else{
+                            return [
+                                "success" => false,
+                                "message" => "insufficient funds",
+                                "data" => $payment 
+                            ];
                     }
-                }else{
-                        return [
-                            "success" => false,
-                            "message" => "insufficient funds",
-                            "data" => $payment 
-                        ];
                 }
             }
-        }
-        else{
+            else{
+                return [
+                    "success" => false,
+                    "message" => "Token invalid",
+                ];
+            }
+    
             return [
                 "success" => false,
-                "message" => "Transaction or token invalid",
+                "message" => "Error in create payment",
+            ];
+        } catch (\Throwable $e) {
+            $this->database->close();
+            return [
+                "success" => false,
+                "message" => $e->getMessage()
             ];
         }
-
-        return [
-            "success" => false,
-            "message" => "Error in create payment",
-        ];
     }
 }

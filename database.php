@@ -27,6 +27,10 @@
                 die("Error de conexión: " . $this->conn->connect_error);
             }
         }
+
+        public function close() {
+            $this->conn->close();
+        }
     
         public function query($sql) {
             $result = $this->conn->query($sql);
